@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"log"
+	"path/filepath"
 
 	"github.com/spf13/viper"
 )
@@ -28,7 +30,10 @@ var AppConfig *Config
 func LoadConfig() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./configs/")
+
+	configPath := filepath.Join(".", "internal", "config")
+	fmt.Printf("FileName : %s", configPath)
+	viper.AddConfigPath(configPath)
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file, %s", err)
