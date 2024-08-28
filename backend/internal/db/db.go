@@ -2,6 +2,7 @@ package db
 
 import (
 	"backend/internal/config"
+	"backend/internal/models"
 	"fmt"
 	"log"
 
@@ -11,6 +12,7 @@ import (
 
 var DB *gorm.DB
 
+// ConnectDatabase initializes the database connection and runs migrations.
 func ConnectDatabase() {
 	dbConfig := config.AppConfig.Database
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
@@ -22,4 +24,15 @@ func ConnectDatabase() {
 	}
 
 	DB = database
+
+	// Run migrations
+	Migrate(DB)
+}
+
+// Migrate runs the database migrations.
+func Migrate(db *gorm.DB) {
+	err := db.AutoMigrate(&models.User{})
+	if err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
 }

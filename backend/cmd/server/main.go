@@ -3,6 +3,7 @@ package main
 import (
 	"backend/internal/api/routes"
 	"backend/internal/config"
+	"backend/internal/db"
 	"log"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 func main() {
 
 	config.LoadConfig()
+	db.ConnectDatabase()
 
 	r := gin.Default()
 

@@ -2,23 +2,24 @@ package routes
 
 import (
 	"backend/internal/api/handlers"
+	"backend/internal/api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes(r *gin.Engine) {
-	r.GET("/ping", handlers.PingHandler)
 
-	// Define other routes here
 	authRoutes := r.Group("/auth")
 	{
-		authRoutes.POST("/login", handlers.LoginHandler)
 		authRoutes.POST("/register", handlers.RegisterHandler)
+		authRoutes.POST("/login", handlers.LoginHandler)
 	}
 
-	streamRoutes := r.Group("/streams")
+	protectedRoutes := r.Group("/")
+	protectedRoutes.Use(middleware.AuthMiddleware())
 	{
-		streamRoutes.GET("/", handlers.GetStreamsHandler)
-		streamRoutes.POST("/", handlers.CreateStreamHandler)
+		// protectedRoutes.GET("/streams", handlers.GetStreamsHandler)
+		// protectedRoutes.POST("/streams", handlers.CreateStreamHandler)
 	}
+
 }
