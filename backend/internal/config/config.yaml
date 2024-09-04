@@ -1,9 +1,0 @@
-server:
-  port: 8080
-
-database:
-  host: localhost
-  port: 5432
-  username: your_username
-  password: your_password
-  dbname: live_streaming
