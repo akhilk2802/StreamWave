@@ -1,62 +1,40 @@
 package handlers
 
 import (
-	"backend/internal/stream-ingest/services"
-	"backend/proto"
-	"context"
+	"backend/internal/stream-ingest/grpc"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
+// HandleStartStream handles the on_publish event from NGINX
 func HandleStartStream(c *gin.Context) {
-	streamKey := c.PostForm("name") // Extract stream key from POST request
-	// app := c.PostForm("app")         // Extract application (optional)
+	streamKey := c.PostForm("name")
+	resolution := "1080p"
+	format := "dash"
 
-	grpcService := services.StreamService{}
+	log.Printf("Stream started with key: %s", streamKey)
+	grpc.StartTranscoding(streamKey, resolution, format)
 
-	// Call the gRPC StartStream method
-	_, err := grpcService.StartStream(context.Background(), &proto.StreamRequest{
-		StreamKey: streamKey,
-		// UserId:    "",  // You can add User ID logic here if needed
-	})
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "failure",
-			"message": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Stream started",
-	})
-
+	c.String(http.StatusOK, "Stream processing started")
 }
 
+// HandleStopStream handles the on_done event from NGINX
 func HandleStopStream(c *gin.Context) {
-	streamKey := c.PostForm("name") // Extract stream key from POST request
+	streamKey := c.PostForm("name")
+	log.Printf("Stream stopped with key: %s", streamKey)
 
-	grpcService := services.StreamService{}
+	c.String(http.StatusOK, "Stream stopped")
+}
 
-	// Call the gRPC StopStream method
-	_, err := grpcService.StopStream(context.Background(), &proto.StreamRequest{
-		StreamKey: streamKey,
-		UserId:    "", // You can add User ID logic here if needed
-	})
+// HandleForwardMetadata forwards metadata to the Stream Processing Service
+func HandleForwardMetadata(c *gin.Context) {
+	streamKey := c.PostForm("stream_key")
+	metadata := c.PostForm("metadata")
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "failure",
-			"message": err.Error(),
-		})
-		return
-	}
+	log.Printf("Forwarding metadata for stream: %s", streamKey)
+	grpc.ForwardMetadata(streamKey, metadata)
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Stream stopped",
-	})
+	c.String(http.StatusOK, "Metadata forwarded")
 }

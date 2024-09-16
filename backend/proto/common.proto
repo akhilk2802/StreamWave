@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "/proto";
+
+// Common messages for metadata forwarding
+message MetadataRequest {
+    string stream_key = 1;
+    string metadata = 2;
+}
+
+message MetadataResponse {
+    string status = 1;
+    string message = 2;
+}
