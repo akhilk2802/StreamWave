@@ -8,7 +8,7 @@ import (
 
 // TranscodeStream runs the FFmpeg command to transcode the stream
 func TranscodeStream(streamKey, resolution, format string) error {
-	ffmpegCmd := fmt.Sprintf("ffmpeg -i rtmp://localhost/live/%s -c:v libx264 -s %s -f %s ./backend/output/%s/stream.mpd",
+	ffmpegCmd := fmt.Sprintf("ffmpeg -i rtmp://localhost/live/%s -c:v libx264 -s %s -f %s ./output/%s/stream.mpd",
 		streamKey, resolution, format, streamKey)
 
 	cmd := exec.Command("bash", "-c", ffmpegCmd)

@@ -4,11 +4,21 @@ import (
 	"backend/internal/stream-ingest/grpc"
 	"backend/internal/stream-ingest/handlers"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	port := os.Getenv("STREAM_INGEST_PORT")
+
 	// Initialize gRPC client for the Stream Processing Service
 	grpc.InitStreamProcessingClient()
 
@@ -19,6 +29,6 @@ func main() {
 	router.POST("/stop-stream", handlers.HandleStopStream)
 	router.POST("/forward-metadata", handlers.HandleForwardMetadata)
 
-	log.Println("Stream Ingest Service running on port 8080")
-	router.Run(":8080")
+	log.Printf("Stream Ingest Service running on port %s", port)
+	router.Run(":" + port)
 }

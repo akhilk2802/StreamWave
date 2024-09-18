@@ -11,7 +11,7 @@ import (
 // HandleStartStream handles the on_publish event from NGINX
 func HandleStartStream(c *gin.Context) {
 	streamKey := c.PostForm("name")
-	resolution := "1080p"
+	resolution := "1920x1080"
 	format := "dash"
 
 	log.Printf("Stream started with key: %s", streamKey)

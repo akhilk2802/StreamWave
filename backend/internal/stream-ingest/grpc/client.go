@@ -4,6 +4,7 @@ import (
 	"backend/proto"
 	"context"
 	"log"
+	"os"
 
 	"google.golang.org/grpc"
 )
@@ -12,7 +13,10 @@ var streamProcessingClient proto.StreamProcessingServiceClient
 
 // Initialize gRPC client for the Stream Processing Service
 func InitStreamProcessingClient() {
-	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
+
+	grpcURL := os.Getenv("STREAM_PROCESSING_GRPC_URL")
+
+	conn, err := grpc.Dial(grpcURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Failed to connect to Stream Processing Service: %v", err)
 	}
@@ -29,7 +33,7 @@ func StartTranscoding(streamKey, resolution, format string) {
 
 	resp, err := streamProcessingClient.StartTranscoding(context.Background(), req)
 	if err != nil {
-		log.Printf("Error starting transcoding: %v", err)
+		log.Printf("Error starting transcoding (from client): %v", err)
 	} else {
 		log.Printf("Transcoding started: %v", resp.Message)
 	}
