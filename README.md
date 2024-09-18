@@ -1,3 +1,5 @@
 # StreamWave 
 
 ### Building a live streaming platform
+
+#### StreamWave is a distributed live streaming platform built using modern cloud-native and microservices architecture. The backend leverages Go for its core microservices, including a Stream Ingest Service that manages live stream ingestion via NGINX RTMP and forwards the stream to the Stream Processing Service. The Stream Processing Service utilizes FFmpeg for transcoding video streams into multiple resolutions and formats, ensuring adaptive streaming through DASH. For efficient service-to-service communication, gRPC is employed across microservices, while AWS S3 handles video segment storage, and CloudFront ensures global content delivery with low latency. The platform is containerized using Docker, and Kubernetes orchestrates the deployment on AWS EKS for scalability and reliability. The project also integrates MapReduce principles to handle parallel transcoding and segmentation tasks, ensuring high performance and scalability in handling video streams.
