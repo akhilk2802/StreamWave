@@ -1,55 +1,31 @@
 package grpc
 
 import (
-	"backend/proto"
-	"context"
-	"log"
-	"os"
+    "context"
+    "log"
 
-	"google.golang.org/grpc"
+    "backend/proto"
+    "google.golang.org/grpc"
 )
 
-var streamProcessingClient proto.StreamProcessingServiceClient
+func StartStreamProcessing(streamKey string) error {
+    conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
+    if err != nil {
+        return err
+    }
+    defer conn.Close()
 
-// Initialize gRPC client for the Stream Processing Service
-func InitStreamProcessingClient() {
+    client := proto.NewStreamProcessingServiceClient(conn)
+    req := &proto.ProcessingRequest{
+        StreamKey: streamKey,
+    }
 
-	grpcURL := os.Getenv("STREAM_PROCESSING_GRPC_URL")
+    _, err = client.StartProcessing(context.Background(), req)
+    if err != nil {
+        log.Printf("Error calling Stream Processing Service: %v", err)
+        return err
+    }
 
-	conn, err := grpc.Dial(grpcURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("Failed to connect to Stream Processing Service: %v", err)
-	}
-	streamProcessingClient = proto.NewStreamProcessingServiceClient(conn)
-}
-
-// Start transcoding by calling the Stream Processing Service
-func StartTranscoding(streamKey, resolution, format string) {
-	req := &proto.TranscodingRequest{
-		StreamKey:  streamKey,
-		Resolution: resolution,
-		Format:     format,
-	}
-
-	resp, err := streamProcessingClient.StartTranscoding(context.Background(), req)
-	if err != nil {
-		log.Printf("Error starting transcoding (from client): %v", err)
-	} else {
-		log.Printf("Transcoding started: %v", resp.Message)
-	}
-}
-
-// Forward metadata to the Stream Processing Service
-func ForwardMetadata(streamKey, metadata string) {
-	req := &proto.MetadataRequest{
-		StreamKey: streamKey,
-		Metadata:  metadata,
-	}
-
-	resp, err := streamProcessingClient.ReceiveMetadata(context.Background(), req)
-	if err != nil {
-		log.Printf("Error forwarding metadata: %v", err)
-	} else {
-		log.Printf("Metadata forwarded: %v", resp.Message)
-	}
+    log.Println("Successfully started stream processing")
+    return nil
 }

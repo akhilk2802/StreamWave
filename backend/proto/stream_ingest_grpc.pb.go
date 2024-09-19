@@ -19,21 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StreamIngestService_StartStream_FullMethodName     = "/stream_ingest.StreamIngestService/StartStream"
-	StreamIngestService_StopStream_FullMethodName      = "/stream_ingest.StreamIngestService/StopStream"
-	StreamIngestService_ForwardMetadata_FullMethodName = "/stream_ingest.StreamIngestService/ForwardMetadata"
+	StreamIngestService_StartStream_FullMethodName = "/stream.StreamIngestService/StartStream"
+	StreamIngestService_StopStream_FullMethodName  = "/stream.StreamIngestService/StopStream"
 )
 
 // StreamIngestServiceClient is the client API for StreamIngestService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// gRPC service for the Stream Ingest Service
+// Stream Ingest gRPC service definition
 type StreamIngestServiceClient interface {
 	StartStream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (*StreamResponse, error)
 	StopStream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (*StreamResponse, error)
-	// New RPC method for forwarding metadata
-	ForwardMetadata(ctx context.Context, in *MetadataRequest, opts ...grpc.CallOption) (*MetadataResponse, error)
 }
 
 type streamIngestServiceClient struct {
@@ -64,26 +61,14 @@ func (c *streamIngestServiceClient) StopStream(ctx context.Context, in *StreamRe
 	return out, nil
 }
 
-func (c *streamIngestServiceClient) ForwardMetadata(ctx context.Context, in *MetadataRequest, opts ...grpc.CallOption) (*MetadataResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(MetadataResponse)
-	err := c.cc.Invoke(ctx, StreamIngestService_ForwardMetadata_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // StreamIngestServiceServer is the server API for StreamIngestService service.
 // All implementations must embed UnimplementedStreamIngestServiceServer
 // for forward compatibility.
 //
-// gRPC service for the Stream Ingest Service
+// Stream Ingest gRPC service definition
 type StreamIngestServiceServer interface {
 	StartStream(context.Context, *StreamRequest) (*StreamResponse, error)
 	StopStream(context.Context, *StreamRequest) (*StreamResponse, error)
-	// New RPC method for forwarding metadata
-	ForwardMetadata(context.Context, *MetadataRequest) (*MetadataResponse, error)
 	mustEmbedUnimplementedStreamIngestServiceServer()
 }
 
@@ -99,9 +84,6 @@ func (UnimplementedStreamIngestServiceServer) StartStream(context.Context, *Stre
 }
 func (UnimplementedStreamIngestServiceServer) StopStream(context.Context, *StreamRequest) (*StreamResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StopStream not implemented")
-}
-func (UnimplementedStreamIngestServiceServer) ForwardMetadata(context.Context, *MetadataRequest) (*MetadataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ForwardMetadata not implemented")
 }
 func (UnimplementedStreamIngestServiceServer) mustEmbedUnimplementedStreamIngestServiceServer() {}
 func (UnimplementedStreamIngestServiceServer) testEmbeddedByValue()                             {}
@@ -160,29 +142,11 @@ func _StreamIngestService_StopStream_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StreamIngestService_ForwardMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MetadataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StreamIngestServiceServer).ForwardMetadata(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StreamIngestService_ForwardMetadata_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StreamIngestServiceServer).ForwardMetadata(ctx, req.(*MetadataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // StreamIngestService_ServiceDesc is the grpc.ServiceDesc for StreamIngestService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var StreamIngestService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "stream_ingest.StreamIngestService",
+	ServiceName: "stream.StreamIngestService",
 	HandlerType: (*StreamIngestServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -192,10 +156,6 @@ var StreamIngestService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StopStream",
 			Handler:    _StreamIngestService_StopStream_Handler,
-		},
-		{
-			MethodName: "ForwardMetadata",
-			Handler:    _StreamIngestService_ForwardMetadata_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

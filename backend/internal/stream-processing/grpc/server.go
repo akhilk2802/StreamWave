@@ -1,124 +1,70 @@
 package grpc
 
 import (
-	"backend/proto"
-	"bytes"
 	"context"
-	"fmt"
-	"os"
-	"os/exec"
-
-	// "fmt"
 	"log"
-	// "os"
-	// "os/exec"
+	"os"
+
+	"backend/internal/stream-processing/mapreduce"
+	"backend/internal/stream-processing/processor"
+	"backend/proto"
 )
 
-// StreamProcessingServer implements the gRPC methods
 type StreamProcessingServer struct {
 	proto.UnimplementedStreamProcessingServiceServer
 }
 
-// // StartTranscoding starts the video transcoding process
-// func (s *StreamProcessingServer) StartTranscoding(ctx context.Context, req *proto.TranscodingRequest) (*proto.TranscodingResponse, error) {
-// 	log.Printf("Received request to transcode stream: %s", req.StreamKey)
+// StartProcessing handles the request to start stream processing
+func (s *StreamProcessingServer) StartProcessing(ctx context.Context, req *proto.ProcessingRequest) (*proto.ProcessingResponse, error) {
+	log.Printf("Received request to process stream: %s", req.StreamKey)
 
-// 	outputDir := os.Getenv("OUTPUT_DIR")
-
-// 	// ffmpegCmd := fmt.Sprintf("ffmpeg -i rtmp://localhost:1936/live/%s -c:v libx264 -s %s -f %s %s/%s/stream.mpd",
-// 	// 	req.StreamKey, req.Resolution, req.Format, outputDir, req.StreamKey)
-
-// 	ffmpegCmd := fmt.Sprintf("ffmpeg -i rtmp://localhost:1936/live/%s -c:v libx264 -s %s -f %s %s/stream.mpd",
-// 		req.StreamKey, req.Resolution, req.Format, outputDir)
-
-// 	log.Printf("Executing FFmpeg command: %s", ffmpegCmd)
-
-// 	if err := exec.Command("bash", "-c", ffmpegCmd).Run(); err != nil {
-// 		log.Printf("Error starting transcoding: %v", err)
-// 		return &proto.TranscodingResponse{Status: "error", Message: "Failed to start transcoding"}, err
-// 	}
-
-// 	return &proto.TranscodingResponse{Status: "success", Message: "Transcoding started successfully"}, nil
-// }
-
-func (s *StreamProcessingServer) StartTranscoding(ctx context.Context, req *proto.TranscodingRequest) (*proto.TranscodingResponse, error) {
-	log.Printf("Received request to transcode stream: %s", req.StreamKey)
-
-	// Step 1: Retrieve and check environment variables (e.g., OUTPUT_DIR)
+	useS3 := os.Getenv("USE_S3") == "true"
+	s3Bucket := os.Getenv("S3_BUCKET")
+	s3Region := os.Getenv("S3_REGION")
 	outputDir := os.Getenv("OUTPUT_DIR")
+	ffmpegPath := os.Getenv("FFMPEG_PATH")
+
 	if outputDir == "" {
-		log.Printf("Error: OUTPUT_DIR environment variable is not set")
-		return &proto.TranscodingResponse{Status: "error", Message: "Output directory not set"}, fmt.Errorf("output directory not set")
+		outputDir = "./output" // Default output directory
 	}
 
-	// Ensure output directory exists and is writable
-	if err := ensureDirectoryExists(outputDir); err != nil {
-		log.Printf("Error: Could not create or access output directory: %v", err)
-		return &proto.TranscodingResponse{Status: "error", Message: "Failed to access output directory"}, err
+	if ffmpegPath == "" {
+		ffmpegPath = "ffmpeg" // Default to ffmpeg in PATH
 	}
 
-	// Step 2: Build the FFmpeg command
-	ffmpegCmd := fmt.Sprintf("ffmpeg -i rtmp://localhost:1936/live/%s -c:v libx264 -s %s -f %s %s/stream.mpd",
-		req.StreamKey, req.Resolution, req.Format, outputDir)
-
-	log.Printf("Executing FFmpeg command: %s", ffmpegCmd)
-
-	// Step 3: Prepare command execution with output capture for logging
-	cmd := exec.Command("bash", "-c", ffmpegCmd)
-
-	// Capture stdout and stderr for logging
-	var out, errBuf bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &errBuf
-
-	// Step 4: Execute the FFmpeg command asynchronously
-	if err := cmd.Start(); err != nil {
-		log.Printf("Error starting transcoding: %v. FFmpeg stderr: %s", err, errBuf.String())
-		return &proto.TranscodingResponse{Status: "error", Message: "Failed to start transcoding"}, err
+	segmentProcessor := &processor.SegmentProcessor{
+		FFmpegPath:   ffmpegPath,
+		Bitrate:      "4500k",
+		OutputFormat: "dash",
+		OutputDir:    outputDir,
+		UseS3:        useS3,
+		S3Bucket:     s3Bucket,
+		S3Region:     s3Region,
 	}
 
-	// Step 5: Wait for the process to finish
-	go func() {
-		err := cmd.Wait()
-		if err != nil {
-			log.Printf("Transcoding process failed: %v. FFmpeg stderr: %s", err, errBuf.String())
-		} else {
-			log.Printf("Transcoding completed successfully. FFmpeg stdout: %s", out.String())
-		}
-	}()
+	mapReduce := &mapreduce.MapReduceFramework{}
 
-	log.Printf("Transcoding process started successfully")
-	return &proto.TranscodingResponse{Status: "success", Message: "Transcoding started successfully"}, nil
-}
-
-// ensureDirectoryExists creates the directory if it does not exist, and checks for write permissions
-func ensureDirectoryExists(dir string) error {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		log.Printf("Directory %s does not exist. Creating...", dir)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %v", dir, err)
-		}
+	// Define resolutions for transcoding
+	resolutions := map[string]string{
+		"1080p": "1920x1080",
+		// "720p":  "1280x720",
+		// "480p":  "854x480",
+		// "360p":  "640x360",
 	}
 
-	// Check write permissions
-	testFile := fmt.Sprintf("%s/testfile", dir)
-	if f, err := os.Create(testFile); err != nil {
-		return fmt.Errorf("no write permission to directory %s: %v", dir, err)
-	} else {
-		f.Close()
-		os.Remove(testFile) // Clean up test file
+	// Map phase: Transcoding
+	err := mapReduce.Map(segmentProcessor, req.StreamKey, resolutions)
+	if err != nil {
+		log.Printf("Error during map phase: %v", err)
+		return &proto.ProcessingResponse{Status: "error", Message: "Failed during map phase"}, err
 	}
 
-	return nil
-}
+	// Reduce phase: Store segments
+	err = mapReduce.Reduce(segmentProcessor, req.StreamKey, resolutions)
+	if err != nil {
+		log.Printf("Error during reduce phase: %v", err)
+		return &proto.ProcessingResponse{Status: "error", Message: "Failed during reduce phase"}, err
+	}
 
-// ReceiveMetadata receives forwarded metadata from the Stream Ingest Service
-func (s *StreamProcessingServer) ReceiveMetadata(ctx context.Context, req *proto.MetadataRequest) (*proto.MetadataResponse, error) {
-	log.Printf("Received metadata for stream %s: %s", req.StreamKey, req.Metadata)
-
-	// Process metadata (e.g., store it, use it for analytics, etc.)
-	return &proto.MetadataResponse{
-		Status:  "success",
-		Message: "Metadata processed successfully",
-	}, nil
+	return &proto.ProcessingResponse{Status: "success", Message: "Stream processing completed successfully"}, nil
 }

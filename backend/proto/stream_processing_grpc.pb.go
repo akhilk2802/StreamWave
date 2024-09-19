@@ -19,21 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StreamProcessingService_StartTranscoding_FullMethodName = "/stream_processing.StreamProcessingService/StartTranscoding"
-	StreamProcessingService_StopProcessing_FullMethodName   = "/stream_processing.StreamProcessingService/StopProcessing"
-	StreamProcessingService_ReceiveMetadata_FullMethodName  = "/stream_processing.StreamProcessingService/ReceiveMetadata"
+	StreamProcessingService_StartProcessing_FullMethodName = "/stream.StreamProcessingService/StartProcessing"
 )
 
 // StreamProcessingServiceClient is the client API for StreamProcessingService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// gRPC service for the Stream Processing Service
+// Stream Processing gRPC service definition
 type StreamProcessingServiceClient interface {
-	StartTranscoding(ctx context.Context, in *TranscodingRequest, opts ...grpc.CallOption) (*TranscodingResponse, error)
-	StopProcessing(ctx context.Context, in *ProcessingRequest, opts ...grpc.CallOption) (*ProcessingResponse, error)
-	// New RPC method for receiving forwarded metadata
-	ReceiveMetadata(ctx context.Context, in *MetadataRequest, opts ...grpc.CallOption) (*MetadataResponse, error)
+	StartProcessing(ctx context.Context, in *ProcessingRequest, opts ...grpc.CallOption) (*ProcessingResponse, error)
 }
 
 type streamProcessingServiceClient struct {
@@ -44,30 +39,10 @@ func NewStreamProcessingServiceClient(cc grpc.ClientConnInterface) StreamProcess
 	return &streamProcessingServiceClient{cc}
 }
 
-func (c *streamProcessingServiceClient) StartTranscoding(ctx context.Context, in *TranscodingRequest, opts ...grpc.CallOption) (*TranscodingResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TranscodingResponse)
-	err := c.cc.Invoke(ctx, StreamProcessingService_StartTranscoding_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *streamProcessingServiceClient) StopProcessing(ctx context.Context, in *ProcessingRequest, opts ...grpc.CallOption) (*ProcessingResponse, error) {
+func (c *streamProcessingServiceClient) StartProcessing(ctx context.Context, in *ProcessingRequest, opts ...grpc.CallOption) (*ProcessingResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ProcessingResponse)
-	err := c.cc.Invoke(ctx, StreamProcessingService_StopProcessing_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *streamProcessingServiceClient) ReceiveMetadata(ctx context.Context, in *MetadataRequest, opts ...grpc.CallOption) (*MetadataResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(MetadataResponse)
-	err := c.cc.Invoke(ctx, StreamProcessingService_ReceiveMetadata_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, StreamProcessingService_StartProcessing_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,12 +53,9 @@ func (c *streamProcessingServiceClient) ReceiveMetadata(ctx context.Context, in 
 // All implementations must embed UnimplementedStreamProcessingServiceServer
 // for forward compatibility.
 //
-// gRPC service for the Stream Processing Service
+// Stream Processing gRPC service definition
 type StreamProcessingServiceServer interface {
-	StartTranscoding(context.Context, *TranscodingRequest) (*TranscodingResponse, error)
-	StopProcessing(context.Context, *ProcessingRequest) (*ProcessingResponse, error)
-	// New RPC method for receiving forwarded metadata
-	ReceiveMetadata(context.Context, *MetadataRequest) (*MetadataResponse, error)
+	StartProcessing(context.Context, *ProcessingRequest) (*ProcessingResponse, error)
 	mustEmbedUnimplementedStreamProcessingServiceServer()
 }
 
@@ -94,14 +66,8 @@ type StreamProcessingServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedStreamProcessingServiceServer struct{}
 
-func (UnimplementedStreamProcessingServiceServer) StartTranscoding(context.Context, *TranscodingRequest) (*TranscodingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StartTranscoding not implemented")
-}
-func (UnimplementedStreamProcessingServiceServer) StopProcessing(context.Context, *ProcessingRequest) (*ProcessingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StopProcessing not implemented")
-}
-func (UnimplementedStreamProcessingServiceServer) ReceiveMetadata(context.Context, *MetadataRequest) (*MetadataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ReceiveMetadata not implemented")
+func (UnimplementedStreamProcessingServiceServer) StartProcessing(context.Context, *ProcessingRequest) (*ProcessingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartProcessing not implemented")
 }
 func (UnimplementedStreamProcessingServiceServer) mustEmbedUnimplementedStreamProcessingServiceServer() {
 }
@@ -125,56 +91,20 @@ func RegisterStreamProcessingServiceServer(s grpc.ServiceRegistrar, srv StreamPr
 	s.RegisterService(&StreamProcessingService_ServiceDesc, srv)
 }
 
-func _StreamProcessingService_StartTranscoding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TranscodingRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StreamProcessingServiceServer).StartTranscoding(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StreamProcessingService_StartTranscoding_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StreamProcessingServiceServer).StartTranscoding(ctx, req.(*TranscodingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _StreamProcessingService_StopProcessing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _StreamProcessingService_StartProcessing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ProcessingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StreamProcessingServiceServer).StopProcessing(ctx, in)
+		return srv.(StreamProcessingServiceServer).StartProcessing(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StreamProcessingService_StopProcessing_FullMethodName,
+		FullMethod: StreamProcessingService_StartProcessing_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StreamProcessingServiceServer).StopProcessing(ctx, req.(*ProcessingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _StreamProcessingService_ReceiveMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MetadataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StreamProcessingServiceServer).ReceiveMetadata(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StreamProcessingService_ReceiveMetadata_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StreamProcessingServiceServer).ReceiveMetadata(ctx, req.(*MetadataRequest))
+		return srv.(StreamProcessingServiceServer).StartProcessing(ctx, req.(*ProcessingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -183,20 +113,12 @@ func _StreamProcessingService_ReceiveMetadata_Handler(srv interface{}, ctx conte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var StreamProcessingService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "stream_processing.StreamProcessingService",
+	ServiceName: "stream.StreamProcessingService",
 	HandlerType: (*StreamProcessingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "StartTranscoding",
-			Handler:    _StreamProcessingService_StartTranscoding_Handler,
-		},
-		{
-			MethodName: "StopProcessing",
-			Handler:    _StreamProcessingService_StopProcessing_Handler,
-		},
-		{
-			MethodName: "ReceiveMetadata",
-			Handler:    _StreamProcessingService_ReceiveMetadata_Handler,
+			MethodName: "StartProcessing",
+			Handler:    _StreamProcessingService_StartProcessing_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

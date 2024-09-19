@@ -1,28 +1,22 @@
 syntax = "proto3";
 
-package stream_ingest;
-
-import "proto/common.proto";
+package stream;
 
 option go_package = "/proto";
 
-// gRPC service for the Stream Ingest Service
+// Stream Ingest gRPC service definition
 service StreamIngestService {
-    rpc StartStream (StreamRequest) returns (StreamResponse) {}
-    rpc StopStream (StreamRequest) returns (StreamResponse) {}
-    // New RPC method for forwarding metadata
-    rpc ForwardMetadata (common.MetadataRequest) returns (common.MetadataResponse) {}
+    rpc StartStream (StreamRequest) returns (StreamResponse);
+    rpc StopStream (StreamRequest) returns (StreamResponse);
 }
 
-// Request message for starting/stopping a stream
+// Stream Request
 message StreamRequest {
     string stream_key = 1;
-    string user_id = 2;
 }
 
-// Response message for stream operations
+// Stream Response
 message StreamResponse {
     string status = 1;
     string message = 2;
 }
-

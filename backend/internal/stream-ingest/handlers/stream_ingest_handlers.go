@@ -1,40 +1,35 @@
 package handlers
 
 import (
-	"backend/internal/stream-ingest/grpc"
 	"log"
 	"net/http"
+
+	grpcclient "backend/internal/stream-ingest/grpc"
 
 	"github.com/gin-gonic/gin"
 )
 
-// HandleStartStream handles the on_publish event from NGINX
+// HandleStartStream handles the on_publish hook from NGINX RTMP
 func HandleStartStream(c *gin.Context) {
 	streamKey := c.PostForm("name")
-	resolution := "1920x1080"
-	format := "dash"
+	log.Printf("Starting stream with key: %s", streamKey)
 
-	log.Printf("Stream started with key: %s", streamKey)
-	grpc.StartTranscoding(streamKey, resolution, format)
+	// Start the stream processing via gRPC
+	if err := grpcclient.StartStreamProcessing(streamKey); err != nil {
+		log.Printf("Error starting stream processing: %v", err)
+		c.String(http.StatusInternalServerError, "Error starting stream")
+		return
+	}
 
-	c.String(http.StatusOK, "Stream processing started")
+	c.String(http.StatusOK, "Stream started successfully")
 }
 
-// HandleStopStream handles the on_done event from NGINX
+// HandleStopStream handles the on_done hook from NGINX RTMP
 func HandleStopStream(c *gin.Context) {
 	streamKey := c.PostForm("name")
-	log.Printf("Stream stopped with key: %s", streamKey)
+	log.Printf("Stopping stream with key: %s", streamKey)
 
-	c.String(http.StatusOK, "Stream stopped")
-}
+	// Implement stop logic if needed
 
-// HandleForwardMetadata forwards metadata to the Stream Processing Service
-func HandleForwardMetadata(c *gin.Context) {
-	streamKey := c.PostForm("stream_key")
-	metadata := c.PostForm("metadata")
-
-	log.Printf("Forwarding metadata for stream: %s", streamKey)
-	grpc.ForwardMetadata(streamKey, metadata)
-
-	c.String(http.StatusOK, "Metadata forwarded")
+	c.String(http.StatusOK, "Stream stopped successfully")
 }

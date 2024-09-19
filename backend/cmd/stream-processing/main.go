@@ -1,34 +1,34 @@
 package main
 
 import (
-	localgrpc "backend/internal/stream-processing/grpc"
-	"backend/proto"
 	"log"
 	"net"
-	"os"
+
+	grpcserver "backend/internal/stream-processing/grpc"
+	"backend/proto"
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
 func main() {
-
+	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Printf("Error loading .env file: %v", err)
+		// Proceeding without .env file
 	}
 
-	port := os.Getenv("STREAM_PROCESSING_PORT")
-
-	lis, err := net.Listen("tcp", "127.0.0.1:"+port)
+	// Listen on port 50052 for gRPC requests
+	lis, err := net.Listen("tcp", ":50052")
 	if err != nil {
-		log.Fatalf("Failed to listen on port %s: %v", port, err)
+		log.Fatalf("Failed to listen on port 50052: %v", err)
 	}
 
 	grpcServer := grpc.NewServer()
-	proto.RegisterStreamProcessingServiceServer(grpcServer, &localgrpc.StreamProcessingServer{})
+	proto.RegisterStreamProcessingServiceServer(grpcServer, &grpcserver.StreamProcessingServer{})
 
-	log.Printf("Stream Processing Service running on port %s", port)
+	log.Println("Stream Processing Service running on port 50052")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve gRPC server: %v", err)
 	}

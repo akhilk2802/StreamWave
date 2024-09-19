@@ -1,40 +1,20 @@
 syntax = "proto3";
 
-package stream_processing;
-
-import "proto/common.proto";
+package stream;
 
 option go_package = "/proto";
 
-
-
-// gRPC service for the Stream Processing Service
+// Stream Processing gRPC service definition
 service StreamProcessingService {
-    rpc StartTranscoding (TranscodingRequest) returns (TranscodingResponse) {}
-    rpc StopProcessing (ProcessingRequest) returns (ProcessingResponse) {}
-    // New RPC method for receiving forwarded metadata
-    rpc ReceiveMetadata (common.MetadataRequest) returns (common.MetadataResponse) {}
+    rpc StartProcessing (ProcessingRequest) returns (ProcessingResponse);
 }
 
-// Request message for starting the transcoding process
-message TranscodingRequest {
-    string stream_key = 1;
-    string resolution = 2;
-    string format = 3;  // DASH or HLS
-}
-
-// Response message for transcoding operations
-message TranscodingResponse {
-    string status = 1;
-    string message = 2;
-}
-
-// Request message for stopping stream processing
+// Request message for starting stream processing
 message ProcessingRequest {
     string stream_key = 1;
 }
 
-// Response message for stopping stream processing
+// Response message for stream processing
 message ProcessingResponse {
     string status = 1;
     string message = 2;
