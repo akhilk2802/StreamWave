@@ -53,6 +53,7 @@ func (mr *MapReduceFramework) Reduce(segmentProcessor *processor.SegmentProcesso
 	} else {
 		log.Println("Storing segments locally")
 		// Segments are already stored locally after transcoding
+		log.Println("Segments are already stored during the transcoding process")
 	}
 
 	return nil

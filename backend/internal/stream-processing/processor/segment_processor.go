@@ -5,9 +5,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -25,7 +27,6 @@ type SegmentProcessor struct {
 	S3Region     string
 }
 
-
 func (sp *SegmentProcessor) TranscodeVideo(streamKey, resName, resolution string) error {
 	log.Printf("Starting TranscodeVideo for streamKey: %s, resName: %s, resolution: %s", streamKey, resName, resolution)
 
@@ -38,19 +39,28 @@ func (sp *SegmentProcessor) TranscodeVideo(streamKey, resName, resolution string
 	}
 
 	// Log the environment variables and configurations
-	log.Printf("FFmpegPath: %s", sp.FFmpegPath)
-	log.Printf("OutputDir: %s", sp.OutputDir)
-	log.Printf("Bitrate: %s", sp.Bitrate)
-	log.Printf("OutputFormat: %s", sp.OutputFormat)
-	log.Printf("UseS3: %v", sp.UseS3)
+	// log.Printf("FFmpegPath: %s", sp.FFmpegPath)
+	// log.Printf("OutputDir: %s", sp.OutputDir)
+	// log.Printf("Bitrate: %s", sp.Bitrate)
+	// log.Printf("OutputFormat: %s", sp.OutputFormat)
+	// log.Printf("UseS3: %v", sp.UseS3)
 
-	// Ensure the FFmpeg executable exists
+	fmt.Printf("OS Environment: %v \n", os.Environ())
+
+	conn, err := net.Dial("tcp", "localhost:1936")
+	if err != nil {
+		log.Fatalf("Failed to connect to RTMP server: %v", err)
+	}
+	defer conn.Close()
+	fmt.Println("Successfully connected to RTMP server")
+
+	// Check if the FFmpeg executable exists
 	if _, err := os.Stat(sp.FFmpegPath); os.IsNotExist(err) {
 		log.Printf("FFmpeg executable not found at path: %s", sp.FFmpegPath)
 		return fmt.Errorf("FFmpeg executable not found at path: %s", sp.FFmpegPath)
 	}
 
-	// Ensure the output directory exists
+	// Check if the output directory exists
 	outputPath := filepath.Join(sp.OutputDir, streamKey, resName)
 	log.Printf("Output path: %s", outputPath)
 
@@ -67,32 +77,45 @@ func (sp *SegmentProcessor) TranscodeVideo(streamKey, resName, resolution string
 
 	// Check if the RTMP stream is available with retries
 	streamURL := fmt.Sprintf("rtmp://localhost:1936/live/%s", streamKey)
-	if !isStreamAvailableWithRetry(streamURL, 5, 2*time.Second) {
-		log.Printf("RTMP stream is not available at URL: %s after retries", streamURL)
-		return fmt.Errorf("RTMP stream is not available at URL: %s after retries", streamURL)
-	}
+	log.Printf("streamURL : %s ", streamURL)
 
-	// Construct the FFmpeg command with reconnection options
-	// ffmpegCmd := fmt.Sprintf("%s -y -loglevel debug -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -i %s -c:v libx264 -b:v %s -s %s -f %s %s/stream.mpd",
-	// 	sp.FFmpegPath, streamURL, sp.Bitrate, resolution, sp.OutputFormat, outputPath)
+	// if !isStreamAvailableWithRetry(streamURL, 5, 2*time.Second) {
+	// 	log.Printf("RTMP stream is not available at URL: %s after retries", streamURL)
+	// 	return fmt.Errorf("RTMP stream is not available at URL: %s after retries", streamURL)
+	// }
 
-	// log.Printf("Executing FFmpeg command for resolution %s: %s", resName, ffmpegCmd)
+	// Construct the FFmpeg command
+	// ffmpegCmd := fmt.Sprintf("ffmpeg -nostdin -i rtmp://localhost:1936/live/%s -c:v libx264 -s %s -f %s %s/stream.mpd",
+	// 	streamKey, resolution, sp.OutputFormat, outputPath)
+	// log.Printf("Executing FFmpeg command: %s", ffmpegCmd)
+	// ffmpegCmd := fmt.Sprintf("/opt/homebrew/bin/ffmpeg -nostdin -i rtmp://localhost:1936/live/%s -c:v libx264 -s %s -f %s %s/stream.mpd",
+	// 	streamKey, resolution, sp.OutputFormat, outputPath)
+	// log.Printf("Executing FFmpeg command: %s", ffmpegCmd)
 
-	ffmpegCmd := fmt.Sprintf("ffmpeg -i rtmp://localhost:1936/live/%s -c:v libx264 -s %s -f %s %s/stream.mpd",
-		streamKey, resolution, sp.OutputFormat, outputPath)
-	log.Printf("Executing FFmpeg command: %s", ffmpegCmd)
+	ffmpegCommand := "ffmpeg -i rtmp://localhost:1936/live/test -c:v libx264 -s 1920x1080 -f dash ./output/test/1080p/stream.mpd"
 
-	// Prepare the command execution with a timeout
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// Prepare the command execution with a timeout context
+	// ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // Set a 60-second timeout
+	// defer cancel()
 
-	cmd := exec.CommandContext(ctx, "bash", "-c", ffmpegCmd)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
+	// cmd := exec.Command("bash", "-c", ffmpegCmd)
+	parts := strings.Fields(ffmpegCommand)
+	cmd := exec.Command(parts[0], parts[1:]...)
+	// cmd := exec.CommandContext(ctx,
+	// 	"ffmpeg",
+	// 	"-nostdin",
+	// 	"-i", "rtmp://localhost:1936/live/"+streamKey,
+	// 	"-c:v", "libx264",
+	// 	"-s", resolution,
+	// 	"-f", sp.OutputFormat,
+	// 	outputPath+"/stream.mpd")
+	// cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
 
-	var outBuf, errBuf bytes.Buffer
-	cmd.Stdout = &outBuf
-	cmd.Stderr = &errBuf
+	// Redirect stdout and stderr to the console
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
+	// Start the FFmpeg command
 	if err := cmd.Start(); err != nil {
 		log.Printf("Error starting transcoding: %v", err)
 		return fmt.Errorf("failed to start FFmpeg command: %v", err)
@@ -102,14 +125,10 @@ func (sp *SegmentProcessor) TranscodeVideo(streamKey, resName, resolution string
 	err = cmd.Wait()
 	if err != nil {
 		log.Printf("Error during transcoding for resolution %s: %v", resName, err)
-		log.Printf("FFmpeg stderr: %s", errBuf.String())
-		log.Printf("FFmpeg stdout: %s", outBuf.String())
 		return fmt.Errorf("transcoding failed for resolution %s: %v", resName, err)
 	}
 
 	log.Printf("Transcoding completed successfully for resolution: %s", resName)
-	log.Printf("FFmpeg stderr: %s", errBuf.String())
-	log.Printf("FFmpeg stdout: %s", outBuf.String())
 
 	return nil
 }
@@ -191,7 +210,7 @@ func (sp *SegmentProcessor) StoreSegmentsInS3(streamKey, resName string) error {
 			}
 			defer file.Close()
 
-			key := fmt.Sprintf("%s/%s/%s/%s", streamKey, resName, filepath.Base(path))
+			key := fmt.Sprintf("%s/%s/%s", streamKey, resName, filepath.Base(path))
 
 			_, err = svc.PutObject(&s3.PutObjectInput{
 				Bucket: aws.String(sp.S3Bucket),
