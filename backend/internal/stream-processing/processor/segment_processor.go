@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -37,13 +36,6 @@ func (sp *SegmentProcessor) TranscodeVideo(streamKey, resName, resolution string
 	} else {
 		log.Printf("Current working directory: %s", wd)
 	}
-
-	// Log the environment variables and configurations
-	// log.Printf("FFmpegPath: %s", sp.FFmpegPath)
-	// log.Printf("OutputDir: %s", sp.OutputDir)
-	// log.Printf("Bitrate: %s", sp.Bitrate)
-	// log.Printf("OutputFormat: %s", sp.OutputFormat)
-	// log.Printf("UseS3: %v", sp.UseS3)
 
 	fmt.Printf("OS Environment: %v \n", os.Environ())
 
@@ -92,15 +84,15 @@ func (sp *SegmentProcessor) TranscodeVideo(streamKey, resName, resolution string
 	// 	streamKey, resolution, sp.OutputFormat, outputPath)
 	// log.Printf("Executing FFmpeg command: %s", ffmpegCmd)
 
-	ffmpegCommand := "ffmpeg -i rtmp://localhost:1936/live/test -c:v libx264 -s 1920x1080 -f dash ./output/test/1080p/stream.mpd"
+	// ffmpegCommand := "ffmpeg -loglevel debug -report -i rtmp://localhost:1936/live/test -c:v libx264 -s 1920x1080 -f dash ./output/test/1080p/stream.mpd"
 
 	// Prepare the command execution with a timeout context
 	// ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // Set a 60-second timeout
 	// defer cancel()
 
 	// cmd := exec.Command("bash", "-c", ffmpegCmd)
-	parts := strings.Fields(ffmpegCommand)
-	cmd := exec.Command(parts[0], parts[1:]...)
+	// parts := strings.Fields(ffmpegCommand)
+	// cmd := exec.Command(parts[0], parts[1:]...)
 	// cmd := exec.CommandContext(ctx,
 	// 	"ffmpeg",
 	// 	"-nostdin",
@@ -111,22 +103,44 @@ func (sp *SegmentProcessor) TranscodeVideo(streamKey, resName, resolution string
 	// 	outputPath+"/stream.mpd")
 	// cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
 
+	// app := "ffmpeg"
+	// arg0 := "-nostdin"
+	// arg1 := "-i"
+	// arg2 := fmt.Sprintf("rtmp://localhost:1936/live/%s", streamKey) // This is your input RTMP stream
+	// arg3 := "-c:v"
+	// arg4 := "libx264" // Codec for video encoding
+	// arg5 := "-s"
+	// arg6 := "1920x1080" // Video resolution
+	// arg7 := "-f"
+	// arg8 := "dash"                                   // Output format (e.g., DASH)
+	// arg9 := fmt.Sprintf("%s/stream.mpd", outputPath) // Output path for the stream
+
+	// cmd := exec.Command(app, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+
+	// err = cmd.Run()
+	// if err != nil {
+	// 	log.Println("Error running ffmpeg:", err)
+	// 	return err
+	// }
+
+	scriptPath := "../../../run_ffmpeg.sh"
+	cmd := exec.Command(scriptPath, streamKey, resolution, sp.OutputFormat, outputPath)
 	// Redirect stdout and stderr to the console
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// Start the FFmpeg command
-	if err := cmd.Start(); err != nil {
+	// // Start the FFmpeg command
+	if err := cmd.Run(); err != nil {
 		log.Printf("Error starting transcoding: %v", err)
 		return fmt.Errorf("failed to start FFmpeg command: %v", err)
 	}
 
 	// Wait for the FFmpeg command to finish
-	err = cmd.Wait()
-	if err != nil {
-		log.Printf("Error during transcoding for resolution %s: %v", resName, err)
-		return fmt.Errorf("transcoding failed for resolution %s: %v", resName, err)
-	}
+	// err = cmd.Wait()
+	// if err != nil {
+	// 	log.Printf("Error during transcoding for resolution %s: %v", resName, err)
+	// 	return fmt.Errorf("transcoding failed for resolution %s: %v", resName, err)
+	// }
 
 	log.Printf("Transcoding completed successfully for resolution: %s", resName)
 

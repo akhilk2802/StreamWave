@@ -1,2 +1,4 @@
 backend/.env
 backend/output/
+*.log
+ffmpeg-*.log
