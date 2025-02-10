@@ -86,7 +86,7 @@ StreamWave/
 
 ### Step 1: Clone the Repository
 ```sh
-git clone https://github.com/yourusername/StreamWave.git
+git clone https://github.com/akhilk2802/StreamWave.git
 cd StreamWave/backend
 ```
 
